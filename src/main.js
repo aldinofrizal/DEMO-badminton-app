@@ -36,7 +36,10 @@ class Player {
   static getPlayers() {
     $.ajax({
       url: `${STATIC.BASE_URL}/players`,
-      method: `GET`
+      method: `GET`,
+      headers: {
+        access_token: localStorage.access_token
+      }
     })
       .done(result => {
         Player.insertBulkElement(result)
@@ -54,6 +57,9 @@ class Player {
     $.ajax({
       url: `${STATIC.BASE_URL}/players`,
       method: `POST`,
+      headers: {
+        access_token: localStorage.access_token
+      },
       data
     })
       .done(() => {
@@ -83,8 +89,8 @@ class UserInterface {
   }
 
   static bindNavigate() {
-    $('#player-container').hide()
-    $('#add-player-container').show()
+    $('#player-container').show()
+    $('#add-player-container').hide()
 
     $('#home-nav').on('click', function() {
       $('#player-container').show()
@@ -98,12 +104,46 @@ class UserInterface {
   }
 }
 
+class Auth {
+  static login() {
+    $.ajax({
+      method: 'POST',
+      url: `${STATIC.BASE_URL}/login`,
+      data: {
+        email: $("#login-email").val(),
+        password: $("#login-password").val()
+      }
+    })
+      .done(result => {
+        localStorage.setItem('access_token', result.access_token)
+        $('#home').show()
+        $('#login').hide()
+        Player.getPlayers()
+      }) 
+  }
+
+  static bindLogin() {
+    $("#form-login").on("submit", function(event) {
+      event.preventDefault()
+      Auth.login()
+    })
+  }
+}
+
 $(document).ready(function () {
-  Player.getPlayers()
   Player.registerPostEvent()
   UserInterface.bindNavigate()
   UserInterface.hideLoader()
-
+  Auth.bindLogin()
+  
+  if(localStorage.access_token) {
+    $('#home').show()
+    $('#login').hide()
+    Player.getPlayers()
+  } else {
+    $('#home').hide()
+    $('#login').show()
+  }
 })
 
 $(document).ajaxStart(function(){
